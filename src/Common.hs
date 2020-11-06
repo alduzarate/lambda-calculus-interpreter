@@ -55,7 +55,7 @@ module Common where
              | Term :@: Term
              | Lam Type Term
              -- Sección 6
-             | Let Term Term
+             | Let Term Term -- ??? que hacemos con el string maestro?
              -- Sección 7
              | As Term Type
              -- Sección 8

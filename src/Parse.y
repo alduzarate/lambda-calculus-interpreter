@@ -25,22 +25,30 @@ import Data.Char
     VAR     { TVar $$ }
     TYPEE   { TTypeE }
     DEF     { TDef }
-    
+    LET     { TLet }
+    IN      { TIn }
+    AS      { TAs }
+    UNIT    { TUnit }
+    TYPEUNIT {  TyUnit }
 
 %right VAR
 %left '=' 
 %right '->'
-%right '\\' '.' 
+%right '\\' '.' LET
+%left TAs
 
 %%
 
 Def     :  Defexp                      { $1 }
         |  Exp	                       { Eval $1 }
-Defexp  : DEF VAR '=' Exp              { Def $2 $4 } 
+Defexp  : DEF VAR '=' Exp              { Def $2 $4 }
 
 Exp     :: { LamTerm }
         : '\\' VAR ':' Type '.' Exp    { LAbs $2 $4 $6 }
         | NAbs                         { $1 }
+        | LET VAR '=' Exp IN Exp       { LLet $2 $4 $6 }
+        | Exp AS Type                  { TAs $1 $3 }
+        | UNIT                         { LUnit } --provisoriamente acá, idk capaz podria ir a atom?
         
 NAbs    :: { LamTerm }
         : NAbs Atom                    { LApp $1 $2 }
@@ -52,10 +60,12 @@ Atom    :: { LamTerm }
 
 Type    : TYPEE                        { EmptyT }
         | Type '->' Type               { FunT $1 $3 }
+        | TYPEUNIT                     { UnitT }
         | '(' Type ')'                 { $2 }
 
 Defs    : Defexp Defs                  { $1 : $2 }
         |                              { [] }
+
      
 {
 
@@ -97,6 +107,10 @@ data Token = TVar String
                | TArrow
                | TEquals
                | TEOF
+               | TLet
+               | TIn
+               | TUnit
+               | TyUnit
                deriving Show
 
 ----------------------------------
@@ -120,9 +134,14 @@ lexer cont s = case s of
                     unknown -> \line -> Failed $ 
                      "Línea "++(show line)++": No se puede reconocer "++(show $ take 10 unknown)++ "..."
                     where lexVar cs = case span isAlpha cs of
+                              ("let",rest)  -> cont TLet rest
+                              ("in",rest)   -> cont TIn rest
+                              ("as",rest)   -> cont TAs rest
                               ("E",rest)    -> cont TTypeE rest
                               ("def",rest)  -> cont TDef rest
                               (var,rest)    -> cont (TVar var) rest
+                              (unit,rest)   -> cont TUnit rest
+                              (Unit,rest)   -> cont TyUnit rest
                           consumirBK anidado cl cont s = case s of
                               ('-':('-':cs)) -> consumirBK anidado cl cont $ dropWhile ((/=) '\n') cs
                               ('{':('-':cs)) -> consumirBK (anidado+1) cl cont cs	

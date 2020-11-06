@@ -37,7 +37,18 @@ pp ii vs (Lam t c) =
     <> printType t
     <> text ". "
     <> pp (ii + 1) vs c
-
+pp ii vs (Let t1 t2) =
+  text "let "
+    <> text (vs !! ii)
+    <> text " = "
+    <> pp (ii) vs t1
+    <> text " in "
+    <> pp (ii + 1) vs t2
+pp ii vs (As t1 ty) =
+  pp ii vs t1
+    <> text "as"
+    <> printType ty
+pp ii vs Unit = text " unit" 
 
 isLam :: Term -> Bool
 isLam (Lam _ _) = True
