@@ -1,0 +1,91 @@
+Ej 1
+
+    x: X ∈ Γ                          z: E ∈ Γ                            y : Y ∈ Γ                           z : E ∈ Γ
+-------------------------      ------------------------ T-Var     --------------------------T-Var  -------------------------- T-Var
+    Γ, x: X, ⊢ x: X                Γ, z: E ⊢ z: E                        Γ, y: Y ⊢ y: Y                    Γ, z: E ⊢ z: E 
+------------------------------------------------------ T-App    ------------------------------------------------------------- T-App
+                Γ, x: X, z: E ⊢ (x z): E -> E ***                                           Γ,y: Y, z: E ⊢ (y z): E
+----------------------------------------------------------------------------------------------------------------------------- T-App 
+                                                Γ, x: X, y: Y, z: E ⊢ (x z) (y z) : E
+----------------------------------------------------------------------------------------------------------------------------- T-Abs
+                                                Γ, x: X, y: Y ⊢ λz:E . (x z) (y z) : E -> E
+----------------------------------------------------------------------------------------------------------------------------- T-Abs
+                                                Γ, x:X ⊢ λy:E->E.λz:E . (x z) (y z) : Y -> E -> E
+----------------------------------------------------------------------------------------------------------------------------- T-Abs
+                                                Γ ⊢ λx:E->E->E.λy:E->E.λz:E . (x z) (y z) : X -> Y -> E -> E
+
+*Sea X == E->E->E, Y == E->E 
+Sea Γ = ∅
+
+λx.(λy.(λz. (x z ) (y z)))
+
+suma a b = a + b
+
+leSumoTres = suma 3
+
+leSumoTres 4 = 7
+
+funcion:: E
+funcion() -> algoDeTipoE
+
+Ej 2
+
+Por qué la función infer retorna un valor de tipoEither String Typey no un valor de tipoType:
+Porque pueden ocurrir errores a la hora de determinar el tipo de la expresión en general. Por ejemplo
+cuando se quiere ver el tipo de variables no definidas, o que el tipo esperado no coincide (para aplicar
+una función, por ejemplo) o que se quiera aplicar algo que no es una función.
+
+Explique el funcionamiento de (>>=):
+(>>=)
+  :: Either String Type -> (Type -> Either String Type) -> Either String Type
+(>>=) v f = either Left f v
+-- fcs. de error
+
+El operador realiza un analisis por casos del argumento v que es de tipo Either. Si v es de la forma Left String, estamos
+en presencia de un error y devolvemos directamente Left String. (Ya que Left es la primera función pasada como parámetro a either,
+la cual indica la función a ser usada en caso de que v sea Left String). 
+Si v es de la forma Right tipo, entonces aplicamos la función a la derecha del operador (en este caso f),
+ya que no encontramos ningún error de tipo (al menos hasta el momento).
+
+
+Ejercicio 5
+TVar, TAbs, TApp, TLet, TAscribe
+
+
+            x : E ∈ Γ 
+--------------------------------------- T-Var
+            Γ, x:E ⊢ x:E
+--------------------------------------- T-Abs
+        Γ, x:E ⊢ ((λx:E. x) : E -> E                                  z : E -> E ∈ Γ                    
+---------------------------------------- T-Ascribe     ------------------------------------- T-Var    
+  Γ ⊢ ((λx:E. x) as E->E) : E -> E                          Γ, z : E -> E ⊢ z : E -> E                   
+-------------------------------------------------------------------------------------------- T-Let
+               Γ ⊢ (let z = ((λx:E. x) as E->E) in z) : E -> E
+-------------------------------------------------------------------------------------------- T-Ascribe
+            (let z = ((λx:E. x) as E->E) in z) as E -> E : E -> E
+
+
+Verificamos que el término tipa correctamente en el intérprete:
+
+> (let z = ((\x:E. x) as E->E) in z) as E -> E
+\x:E. x
+
+> :type (let z = ((\x:E. x) as E->E) in z) as E -> E
+E -> E
+
+> :type (let z = ((\x:E. x) as E->E) in z) as E -> E -> E
+Error de tipos: se esperaba E -> E -> E, pero E -> E fue inferido.
+
+Ejercicio 7
+
+Reglas de evaluación para pares:
+
+     t1 → t1'                                        t2 → t2'
+------------------ EPair1                  -------------------------- EPair2
+(t1,t2) → (t1',t2)                              (v,t2) → (v, t2')
+
+
+     (v1,_)                                          v2
+------------------- EFst                  -------------------------- ESnd
+ fst (v1,_) → v1                                snd (_, v2) → v2
+

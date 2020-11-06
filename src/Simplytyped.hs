@@ -25,8 +25,12 @@ conversion' b (LVar n    ) = maybe (Free (Global n)) Bound (n `elemIndex` b)
 conversion' b (LApp t u  ) = conversion' b t :@: conversion' b u
 conversion' b (LAbs n t u) = Lam t (conversion' (n : b) u)
 conversion' b (LLet s t u) = Let (conversion' b t) (conversion' (s:b) u) --que hacemos con s??
-conversion' b (LAs term type) = As (conversion' b term) type
+conversion' b (LAs term tipo) = As (conversion' b term) tipo
 conversion' b LUnit           = Unit
+conversion' b (LFst term) = Fst (conversion' b term)
+conversion' b (LSnd term) = Snd (conversion' b term)
+conversion' b (LPair term1 term2) = Pair (conversion' b term1) (conversion' b term2)
+
 
 -----------------------
 --- eval
@@ -47,8 +51,11 @@ sub _ _ (Free n   )           = Free n
 sub i t (u   :@: v)           = sub i t u :@: sub i t v
 sub i t (Lam t'  u)           = Lam t' (sub (i + 1) t u)
 sub i t (Let t1 t2)           = Let t1 (sub (i + 1) t t2)
-sub i t (As term type)        = As (sub i t term) type
+sub i t (As term tipo)        = As (sub i t term) tipo
 sub i t Unit                  = Unit
+sub i t (Fst term)            = Fst (sub i t term)
+sub i t (Snd term)            = Snd (sub i t term)
+sub i t (Pair t1 t2)          = Pair (sub i t t1) (sub i t t2)
 
 -- evaluador de términos
 eval :: NameEnv Value Type -> Term -> Value
@@ -61,10 +68,13 @@ eval e (u        :@: v      ) = case eval e u of
   VLam t u' -> eval e (Lam t u' :@: v)
   _         -> error "Error de tipo en run-time, verificar type checker"
 eval e (Let t1 t2)            =  eval e (sub 0 t1 t2)
-eval e (As term type)         =  eval e term
+eval e (As term tipo)         =  eval e term
 eval e Unit                   =  VUnit
-
-
+eval e (Fst (Pair a _))       =  eval e a
+eval e (Snd (Pair _ b))       =  eval e b
+eval e (Fst _)                =  error "Error de tipo en run-time, verificar type checker"
+eval e (Snd _)                =  error "Error de tipo en run-time, verificar type checker"
+eval e (Pair t1 t2)           =  VPair (eval e t1) (eval e t2)
 
 -----------------------
 --- quoting
@@ -72,7 +82,8 @@ eval e Unit                   =  VUnit
 
 quote :: Value -> Term
 quote (VLam t f) = Lam t f
- 
+quote (VUnit)    = Unit
+quote (VPair v1 v2) = Pair (quote v1) (quote v2)
 
 ----------------------
 --- type checker
@@ -122,5 +133,13 @@ infer' c e (t :@: u) = infer' c e t >>= \tt -> infer' c e u >>= \tu ->
 infer' c e (Lam t u) = infer' (t : c) e u >>= \tu -> ret $ FunT t tu
 infer' c e (Let t1 t2) = infer' c e t1 >>= \tt1 -> infer' (tt1:c) e t2 
 -- No lo consideramos variable libre, por ende, lo agregamos al contexto y NO al ambiente (environment)
-infer' c e (As term type) = infer' c e term >>= \tt -> if tt == type then ret type else matchError type tt
+infer' c e (As term tipo) = infer' c e term >>= \tt -> if tt == tipo then ret tipo else matchError tipo tt
 infer' c e Unit = ret UnitT
+infer' c e (Pair t1 t2) = infer' c e t1 >>= \tt1 -> infer' (tt1:c) e t2 >>= \tt2 -> ret (PairT tt1 tt2)
+infer' c e (Fst t) = infer' c e t >>= \tt ->  case tt of
+                                                PairT t1 t2 -> ret t1
+                                                _           -> err "Se aplica fst a algo que no es una tupla"
+infer' c e (Snd t) = infer' c e t >>= \tt ->  case tt of
+                                                PairT t1 t2 -> ret t2
+                                                _           -> err "Se aplica snd a algo que no es una tupla"
+

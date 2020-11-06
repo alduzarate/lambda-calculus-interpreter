@@ -19,6 +19,7 @@ import Data.Char
     ':'     { TColon }
     '\\'    { TAbs }
     '.'     { TDot }
+    ','     { TComa }
     '('     { TOpen }
     ')'     { TClose }
     '->'    { TArrow }
@@ -30,13 +31,16 @@ import Data.Char
     AS      { TAs }
     UNIT    { TUnit }
     TYPEUNIT {  TyUnit }
+    TYPETUPLE { TyTuple }
+    FST     { TFst }
+    SND     { TSnd }
 
 %right VAR
 %left '=' 
 %right '->'
 %right '\\' '.' LET
 %left TAs
-
+%left TFst TSnd 
 %%
 
 Def     :  Defexp                      { $1 }
@@ -47,8 +51,10 @@ Exp     :: { LamTerm }
         : '\\' VAR ':' Type '.' Exp    { LAbs $2 $4 $6 }
         | NAbs                         { $1 }
         | LET VAR '=' Exp IN Exp       { LLet $2 $4 $6 }
-        | Exp AS Type                  { TAs $1 $3 }
-        | UNIT                         { LUnit } --provisoriamente acá, idk capaz podria ir a atom?
+        | Exp AS Type                  { LAs $1 $3 }
+        |'(' Exp ',' Exp ')'           { LPair $2 $4 }
+        | FST Exp Exp                  { LFst $2 }
+        | SND Exp Exp                  { LSnd $3 }
         
 NAbs    :: { LamTerm }
         : NAbs Atom                    { LApp $1 $2 }
@@ -57,12 +63,14 @@ NAbs    :: { LamTerm }
 Atom    :: { LamTerm }
         : VAR                          { LVar $1 }  
         | '(' Exp ')'                  { $2 }
+        | UNIT                         { LUnit } 
 
 Type    : TYPEE                        { EmptyT }
         | Type '->' Type               { FunT $1 $3 }
         | TYPEUNIT                     { UnitT }
         | '(' Type ')'                 { $2 }
-
+        | '(' Type ',' Type ')'        { PairT $2 $4 }
+        
 Defs    : Defexp Defs                  { $1 : $2 }
         |                              { [] }
 
@@ -101,6 +109,7 @@ data Token = TVar String
                | TDef
                | TAbs
                | TDot
+               | TComa
                | TOpen
                | TClose 
                | TColon
@@ -109,8 +118,12 @@ data Token = TVar String
                | TEOF
                | TLet
                | TIn
+               | TAs
                | TUnit
                | TyUnit
+               | TyTuple
+               | TFst
+               | TSnd
                deriving Show
 
 ----------------------------------
@@ -126,6 +139,7 @@ lexer cont s = case s of
                     ('-':('>':cs)) -> cont TArrow cs
                     ('\\':cs)-> cont TAbs cs
                     ('.':cs) -> cont TDot cs
+                    (',':cs) -> cont TComa cs
                     ('(':cs) -> cont TOpen cs
                     ('-':('>':cs)) -> cont TArrow cs
                     (')':cs) -> cont TClose cs
@@ -141,7 +155,9 @@ lexer cont s = case s of
                               ("def",rest)  -> cont TDef rest
                               (var,rest)    -> cont (TVar var) rest
                               (unit,rest)   -> cont TUnit rest
-                              (Unit,rest)   -> cont TyUnit rest
+                              ("Unit",rest) -> cont TyUnit rest
+                              ("fst",rest)  -> cont TFst rest
+                              ("snd",rest)  -> cont TSnd rest
                           consumirBK anidado cl cont s = case s of
                               ('-':('-':cs)) -> consumirBK anidado cl cont $ dropWhile ((/=) '\n') cs
                               ('{':('-':cs)) -> consumirBK (anidado+1) cl cont cs	
