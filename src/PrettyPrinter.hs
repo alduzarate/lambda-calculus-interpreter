@@ -85,8 +85,9 @@ printType :: Type -> Doc
 printType EmptyT = text "E"
 printType (FunT t1 t2) =
   sep [parensIf (isFun t1) (printType t1), text "->", printType t2]
-printType UnitT = text "unit"
+printType UnitT = text "Unit"
 printType (PairT t1 t2) = parens (sep [ printType t1, text ",", printType t2])
+printType NatT  = text "Nat"
 
 isFun :: Type -> Bool
 isFun (FunT _ _) = True

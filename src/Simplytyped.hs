@@ -164,25 +164,30 @@ infer' c e (Zero)  = ret NatT
 infer' c e (Suc t) = infer' c e t >>= \tt -> case tt of
                                               NatT -> ret NatT
                                               _           -> matchError NatT tt
-
-infer' c e (Rec t1 t2 t3) = let
-                              tt1 = infer' c e t1
-                              tt2 = infer' c e t2
-                              tt3 = infer' c e t3
-                            in
-                              case tt2 of
-                                (FunT x (FunT NatT y)) -> if x == tt1 then case tt3 of
-                                                                                      NatT -> ret tt1
-                                                                                      _    -> matchError NatT tt3
-                                                                      else matchError (FunT x (FunT NatT y)) tt2 
+--Γ`t1:T Γ`t2:T→Nat→T Γ`t3:Nat ---> T
+infer' c e (Rec t1 t2 t3) = infer' c e t1 >>= \tt1 -> infer' c e t2 >>= \tt2 -> infer' c e t3 >>= \tt3 ->
+                                      case tt2 of
+                                        (FunT x (FunT NatT y)) -> if x == tt1 && y == tt1
+                                                                    then case tt3 of
+                                                                          NatT -> ret tt1
+                                                                          _    -> matchError NatT tt3 
+                                                                    else matchError (FunT tt1 (FunT NatT tt1)) tt2
+                                                                    
+                                        _ -> matchError (FunT tt1 (FunT NatT tt1)) tt2 
   
   
- {-
-   infer' c e t1 >>= (\tt1 -> case infer' c e t2 of
-                                                      (FunT tt1 (FunT NatT tt1)) -> 
-                                                        infer' c e t3 >>= (\tt3 -> case tt3 of
-                                                                                    NatT -> tt1
-                                                                                    _    -> matchError NatT tt3)                           
-                                                      _ -> matchError (FunT tt1 (FunT NatT tt1)) tt1) 
-                                                  -}
+  -- idea que cada vez se desvirtuó más
+  --let
+  --                             tt1 = infer' c e t1
+  --                             tt2 = infer' c e t2
+  --                             tt3 = infer' c e t3
+  --                           in
+  --                             case tt2 of
+  --                               Right (FunT x (FunT NatT y)) -> if Right x == tt1 
+  --                                                                 then case tt3 of
+  --                                                                       Right NatT  -> tt1
+  --                                                                       Right x     -> matchError NatT x
+  --                                                                 else matchError (FunT x (FunT NatT y)) x 
+  
+  --                               _ -> matchError (FunT tt1 (FunT NatT tt1)) tt2
                                       
