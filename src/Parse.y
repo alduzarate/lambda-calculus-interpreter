@@ -34,13 +34,17 @@ import Data.Char
     TYPETUPLE { TyTuple }
     FST     { TFst }
     SND     { TSnd }
+    TYPENAT { TyNat }
+    ZERO    { TZero }
+    SUC     { TSuc }
+    R       { TR }
 
 %right VAR
-%left '=' 
+%left '=' R 
 %right '->'
 %right '\\' '.' LET
-%left TAs
-%left TFst TSnd 
+%left AS SUC
+%left FST SND 
 %%
 
 Def     :  Defexp                      { $1 }
@@ -55,7 +59,9 @@ Exp     :: { LamTerm }
         |'(' Exp ',' Exp ')'           { LPair $2 $4 }
         | FST Exp Exp                  { LFst $2 }
         | SND Exp Exp                  { LSnd $3 }
-        
+        | SUC Exp                      { LSuc $2 }
+        | R Exp Exp Exp                { LRec $2 $3 $4 }
+
 NAbs    :: { LamTerm }
         : NAbs Atom                    { LApp $1 $2 }
         | Atom                         { $1 }
@@ -64,6 +70,7 @@ Atom    :: { LamTerm }
         : VAR                          { LVar $1 }  
         | '(' Exp ')'                  { $2 }
         | UNIT                         { LUnit } 
+        | ZERO                         { LZero }
 
 Type    : TYPEE                        { EmptyT }
         | Type '->' Type               { FunT $1 $3 }
@@ -124,6 +131,11 @@ data Token = TVar String
                | TyTuple
                | TFst
                | TSnd
+               | TyNat
+               | TZero
+               | TSuc
+               | TNat 
+               | TR
                deriving Show
 
 ----------------------------------
@@ -158,6 +170,10 @@ lexer cont s = case s of
                               ("Unit",rest) -> cont TyUnit rest
                               ("fst",rest)  -> cont TFst rest
                               ("snd",rest)  -> cont TSnd rest
+                              ("suc",rest)  -> cont TSuc rest
+                              ("zero",rest) -> cont TZero rest
+                              ("R", rest)   -> cont TR rest
+                              ("Nat",rest)  -> cont TyNat rest
                           consumirBK anidado cl cont s = case s of
                               ('-':('-':cs)) -> consumirBK anidado cl cont $ dropWhile ((/=) '\n') cs
                               ('{':('-':cs)) -> consumirBK (anidado+1) cl cont cs	

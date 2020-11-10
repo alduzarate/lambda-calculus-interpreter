@@ -30,7 +30,9 @@ conversion' b LUnit           = Unit
 conversion' b (LFst term) = Fst (conversion' b term)
 conversion' b (LSnd term) = Snd (conversion' b term)
 conversion' b (LPair term1 term2) = Pair (conversion' b term1) (conversion' b term2)
-
+conversion' b LZero = Zero
+conversion' b (LSuc term) = Suc (conversion' b term)  
+conversion' b (LRec t1 t2 t3) = Rec (conversion' b t1) (conversion' b t2) (conversion' b t3)   
 
 -----------------------
 --- eval
@@ -56,8 +58,11 @@ sub i t Unit                  = Unit
 sub i t (Fst term)            = Fst (sub i t term)
 sub i t (Snd term)            = Snd (sub i t term)
 sub i t (Pair t1 t2)          = Pair (sub i t t1) (sub i t t2)
+sub i t Zero                  = Zero
+sub i t (Suc t1)              = Suc (sub i t t1)
+sub i t (Rec t1 t2 t3)        = Rec (sub i t t1) (sub i t t2) (sub i t t3)
 
--- evaluador de términos
+ -- evaluador de términos
 eval :: NameEnv Value Type -> Term -> Value
 eval _ (Bound _             ) = error "variable ligada inesperada en eval"
 eval e (Free  n             ) = fst $ fromJust $ lookup n e
@@ -75,15 +80,26 @@ eval e (Snd (Pair _ b))       =  eval e b
 eval e (Fst _)                =  error "Error de tipo en run-time, verificar type checker"
 eval e (Snd _)                =  error "Error de tipo en run-time, verificar type checker"
 eval e (Pair t1 t2)           =  VPair (eval e t1) (eval e t2)
+eval e Zero                   =  VNum NZero
+eval e (Suc term)             =  case eval e term of
+                                    VNum n -> VNum (NSuc n)
+                                    _      -> error "sucesor de un termino no nat"
+eval e (Rec t1 t2 t3)           =  case eval e t3 of
+                                    VNum NZero -> eval e t1
+                                    VNum (NSuc n)  -> let nro = quote(VNum n)
+                                                      in eval e (t2 :@: (Rec t1 t2 nro) :@: nro)
+
 
 -----------------------
 --- quoting
 -----------------------
 
 quote :: Value -> Term
-quote (VLam t f) = Lam t f
-quote (VUnit)    = Unit
-quote (VPair v1 v2) = Pair (quote v1) (quote v2)
+quote (VLam t f)      = Lam t f
+quote (VUnit)         = Unit
+quote (VPair v1 v2)   = Pair (quote v1) (quote v2)
+quote (VNum (NZero))  = Zero
+quote (VNum (NSuc n)) = Suc (quote (VNum n))
 
 ----------------------
 --- type checker
@@ -131,7 +147,8 @@ infer' c e (t :@: u) = infer' c e t >>= \tt -> infer' c e u >>= \tu ->
     FunT t1 t2 -> if (tu == t1) then ret t2 else matchError t1 tu
     _          -> notfunError tt
 infer' c e (Lam t u) = infer' (t : c) e u >>= \tu -> ret $ FunT t tu
-infer' c e (Let t1 t2) = infer' c e t1 >>= \tt1 -> infer' (tt1:c) e t2 
+infer' c e (Let t1 t2) = infer' c e t1 >>= \tt1 -> infer' (tt1:c) e t2
+
 -- No lo consideramos variable libre, por ende, lo agregamos al contexto y NO al ambiente (environment)
 infer' c e (As term tipo) = infer' c e term >>= \tt -> if tt == tipo then ret tipo else matchError tipo tt
 infer' c e Unit = ret UnitT
@@ -143,3 +160,29 @@ infer' c e (Snd t) = infer' c e t >>= \tt ->  case tt of
                                                 PairT t1 t2 -> ret t2
                                                 _           -> err "Se aplica snd a algo que no es una tupla"
 
+infer' c e (Zero)  = ret NatT
+infer' c e (Suc t) = infer' c e t >>= \tt -> case tt of
+                                              NatT -> ret NatT
+                                              _           -> matchError NatT tt
+
+infer' c e (Rec t1 t2 t3) = let
+                              tt1 = infer' c e t1
+                              tt2 = infer' c e t2
+                              tt3 = infer' c e t3
+                            in
+                              case tt2 of
+                                (FunT x (FunT NatT y)) -> if x == tt1 then case tt3 of
+                                                                                      NatT -> ret tt1
+                                                                                      _    -> matchError NatT tt3
+                                                                      else matchError (FunT x (FunT NatT y)) tt2 
+  
+  
+ {-
+   infer' c e t1 >>= (\tt1 -> case infer' c e t2 of
+                                                      (FunT tt1 (FunT NatT tt1)) -> 
+                                                        infer' c e t3 >>= (\tt3 -> case tt3 of
+                                                                                    NatT -> tt1
+                                                                                    _    -> matchError NatT tt3)                           
+                                                      _ -> matchError (FunT tt1 (FunT NatT tt1)) tt1) 
+                                                  -}
+                                      

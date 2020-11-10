@@ -59,6 +59,18 @@ pp ii vs (Pair t1 t2)=
     <> text " , "
     <> pp (ii + 1) vs t2
     <> text  " )"
+pp ii vs (Zero) = 
+  text "0"
+pp ii vs (Suc t1) = 
+  parens (text "suc " 
+    <> pp ii vs t1)
+
+pp ii vs (Rec t1 t2 t3) = 
+  text "R"
+    <> pp ii vs t1
+    <> pp ii vs t2
+    <> pp ii vs t3
+
 
 isLam :: Term -> Bool
 isLam (Lam _ _) = True
@@ -85,7 +97,15 @@ fv (Bound _         ) = []
 fv (Free  (Global n)) = [n]
 fv (t   :@: u       ) = fv t ++ fv u
 fv (Lam _   u       ) = fv u
-fv (Pair t1 t2) = fv t1 ++ fv t2
+fv (Let t1 t2)        = fv t1 ++ fv t2
+fv (As t tipo)        = fv t 
+fv Unit               = []
+fv (Fst t)            = fv t
+fv (Snd t)            = fv t
+fv (Pair t1 t2)       = fv t1 ++ fv t2
+fv Zero               = []
+fv (Suc t)            = fv t
+fv (Rec t1 t2 t3)     = fv t1 ++ fv t2 ++ fv t3
 
 ---
 printTerm :: Term -> Doc
