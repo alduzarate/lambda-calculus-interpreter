@@ -1,0 +1,12 @@
+def itt = \f:Nat->Nat.\x:Nat. R (f (suc 0)) (\z:Nat. \k:Nat.f z) x
+def ack = \m:Nat. R (\x:Nat.suc x) (\x:Nat->Nat. \z:Nat. itt x) m
+
+def uno    = suc 0
+def dos    = suc uno
+def tres   = suc dos
+def cuatro = suc tres
+def cinco  = suc cuatro
+def seis   = suc cinco
+def siete  = suc seis
+def ocho   = suc siete
+def nueve  = suc ocho

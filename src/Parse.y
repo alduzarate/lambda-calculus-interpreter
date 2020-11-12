@@ -60,7 +60,7 @@ Exp     :: { LamTerm }
         | FST Exp                      { LFst $2 }
         | SND Exp                      { LSnd $2 }
         | SUC Exp                      { LSuc $2 }
-        | R Exp Exp Exp                { LRec $2 $3 $4 }
+        | R Atom Atom Exp                { LRec $2 $3 $4 }
 
 NAbs    :: { LamTerm }
         : NAbs Atom                    { LApp $1 $2 }
