@@ -8,6 +8,7 @@ where
 import           Common
 import           Text.PrettyPrint.HughesPJ
 import           Prelude                 hiding ( (<>) )
+
 -- lista de posibles nombres para variables
 vars :: [String]
 vars =
@@ -70,7 +71,6 @@ pp ii vs (Rec t1 t2 t3) =
     <> pp ii vs t1
     <> pp ii vs t2
     <> pp ii vs t3
-
 
 isLam :: Term -> Bool
 isLam (Lam _ _) = True

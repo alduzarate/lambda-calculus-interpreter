@@ -3,7 +3,6 @@ module Parse where
 import Common
 import Data.Maybe
 import Data.Char
-
 }
 
 %monad { P } { thenP } { returnP }
@@ -40,8 +39,8 @@ import Data.Char
     R       { TR }
 
 %right VAR
-%left '=' R 
-%right '->'
+%left '=' 
+%right '->' R
 %right '\\' '.' LET IN
 %left AS SUC
 %left FST SND 
@@ -60,7 +59,7 @@ Exp     :: { LamTerm }
         | FST Exp                      { LFst $2 }
         | SND Exp                      { LSnd $2 }
         | SUC Exp                      { LSuc $2 }
-        | R Atom Atom Exp                { LRec $2 $3 $4 }
+        | R Atom Atom Exp              { LRec $2 $3 $4 }
 
 NAbs    :: { LamTerm }
         : NAbs Atom                    { LApp $1 $2 }

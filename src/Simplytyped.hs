@@ -24,7 +24,7 @@ conversion' :: [String] -> LamTerm -> Term
 conversion' b (LVar n    ) = maybe (Free (Global n)) Bound (n `elemIndex` b)
 conversion' b (LApp t u  ) = conversion' b t :@: conversion' b u
 conversion' b (LAbs n t u) = Lam t (conversion' (n : b) u)
-conversion' b (LLet s t u) = Let (conversion' b t) (conversion' (s:b) u) --que hacemos con s??
+conversion' b (LLet s t u) = Let (conversion' b t) (conversion' (s:b) u)
 conversion' b (LAs term tipo) = As (conversion' b term) tipo
 conversion' b LUnit           = Unit
 conversion' b (LFst term) = Fst (conversion' b term)
@@ -39,13 +39,8 @@ conversion' b (LRec t1 t2 t3) = Rec (conversion' b t1) (conversion' b t2) (conve
 -----------------------
 --El  primer  argumento  indica  la  cantidad  de  abstracciones  bajo  la  cual  se  realizar ́a  la  
 --substitucion,  el  segundo argumento es el termino a substituir, 
---y el tercero el termino donde se efectuar ́a la substituci ́on.
--- sub 3 x x^3+3
+--y el tercero el termino donde se efectuar ́a la substitucion.
 
--- let 
-  --   x = 3 --> t1
-  -- in
-  --   x+6 --> t2
 sub :: Int -> Term -> Term -> Term
 sub i t (Bound j) | i == j    = t
 sub _ _ (Bound j) | otherwise = Bound j
@@ -164,7 +159,7 @@ infer' c e (Zero)  = ret NatT
 infer' c e (Suc t) = infer' c e t >>= \tt -> case tt of
                                               NatT -> ret NatT
                                               _           -> matchError NatT tt
---Γ`t1:T Γ`t2:T→Nat→T Γ`t3:Nat ---> T
+
 infer' c e (Rec t1 t2 t3) = infer' c e t1 >>= \tt1 -> infer' c e t2 >>= \tt2 -> infer' c e t3 >>= \tt3 ->
                                       case tt2 of
                                         (FunT x (FunT NatT y)) -> if x == tt1 && y == tt1
@@ -174,20 +169,3 @@ infer' c e (Rec t1 t2 t3) = infer' c e t1 >>= \tt1 -> infer' c e t2 >>= \tt2 -> 
                                                                     else matchError (FunT tt1 (FunT NatT tt1)) tt2
                                                                     
                                         _ -> matchError (FunT tt1 (FunT NatT tt1)) tt2 
-  
-  
-  -- idea que cada vez se desvirtuó más
-  --let
-  --                             tt1 = infer' c e t1
-  --                             tt2 = infer' c e t2
-  --                             tt3 = infer' c e t3
-  --                           in
-  --                             case tt2 of
-  --                               Right (FunT x (FunT NatT y)) -> if Right x == tt1 
-  --                                                                 then case tt3 of
-  --                                                                       Right NatT  -> tt1
-  --                                                                       Right x     -> matchError NatT x
-  --                                                                 else matchError (FunT x (FunT NatT y)) x 
-  
-  --                               _ -> matchError (FunT tt1 (FunT NatT tt1)) tt2
-                                      
