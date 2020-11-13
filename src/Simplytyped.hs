@@ -20,6 +20,7 @@ import           Common
 conversion :: LamTerm -> Term
 conversion = conversion' []
 
+-- toma una lista de variables ligadas y el lambda termino y devuelve el termino
 conversion' :: [String] -> LamTerm -> Term
 conversion' b (LVar n    ) = maybe (Free (Global n)) Bound (n `elemIndex` b)
 conversion' b (LApp t u  ) = conversion' b t :@: conversion' b u
@@ -35,11 +36,11 @@ conversion' b (LSuc term) = Suc (conversion' b term)
 conversion' b (LRec t1 t2 t3) = Rec (conversion' b t1) (conversion' b t2) (conversion' b t3)   
 
 -----------------------
---- eval
+--- sub
 -----------------------
---El  primer  argumento  indica  la  cantidad  de  abstracciones  bajo  la  cual  se  realizar ́a  la  
+--El  primer  argumento  indica  la  cantidad  de  abstracciones  bajo  la  cual  se  realizara  la  
 --substitucion,  el  segundo argumento es el termino a substituir, 
---y el tercero el termino donde se efectuar ́a la substitucion.
+--y el tercero el termino donde se efectuara la substitucion.
 
 sub :: Int -> Term -> Term -> Term
 sub i t (Bound j) | i == j    = t
@@ -58,6 +59,7 @@ sub i t (Suc t1)              = Suc (sub i t t1)
 sub i t (Rec t1 t2 t3)        = Rec (sub i t t1) (sub i t t2) (sub i t t3)
 
  -- evaluador de términos
+ -- Toma el enterno de variables libres, esto es [(Name, (value, type))] lo cual representa cada variable junto su valor y su tipo
 eval :: NameEnv Value Type -> Term -> Value
 eval _ (Bound _             ) = error "variable ligada inesperada en eval"
 eval e (Free  n             ) = fst $ fromJust $ lookup n e
@@ -101,6 +103,7 @@ quote (VNum (NSuc n)) = Suc (quote (VNum n))
 -----------------------
 
 -- type checker
+--Infiere el tipo
 infer :: NameEnv Value Type -> Term -> Either String Type
 infer = infer' []
 
@@ -132,6 +135,7 @@ notfunError t1 = err $ render (printType t1) ++ " no puede ser aplicado."
 notfoundError :: Name -> Either String Type
 notfoundError n = err $ show n ++ " no está definida."
 
+--Toma un contexto (una lista de tipos), el entorno de variables libres y el termino
 infer' :: Context -> NameEnv Value Type -> Term -> Either String Type
 infer' c _ (Bound i) = ret (c !! i)
 infer' _ e (Free  n) = case lookup n e of
@@ -142,9 +146,10 @@ infer' c e (t :@: u) = infer' c e t >>= \tt -> infer' c e u >>= \tu ->
     FunT t1 t2 -> if (tu == t1) then ret t2 else matchError t1 tu
     _          -> notfunError tt
 infer' c e (Lam t u) = infer' (t : c) e u >>= \tu -> ret $ FunT t tu
-infer' c e (Let t1 t2) = infer' c e t1 >>= \tt1 -> infer' (tt1:c) e t2
 
 -- No lo consideramos variable libre, por ende, lo agregamos al contexto y NO al ambiente (environment)
+infer' c e (Let t1 t2) = infer' c e t1 >>= \tt1 -> infer' (tt1:c) e t2 
+
 infer' c e (As term tipo) = infer' c e term >>= \tt -> if tt == tipo then ret tipo else matchError tipo tt
 infer' c e Unit = ret UnitT
 infer' c e (Pair t1 t2) = infer' c e t1 >>= \tt1 -> infer' (tt1:c) e t2 >>= \tt2 -> ret (PairT tt1 tt2)

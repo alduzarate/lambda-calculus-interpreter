@@ -44,21 +44,23 @@ pp ii vs (Let t1 t2) =
     <> text " = "
     <> pp (ii) vs t1
     <> text " in "
-    <> pp (ii + 1) vs t2
+    <> pp (ii + 1) vs t2 -- Bajamos de nivel porque la primera expresion t1 del let pasa a ser una ligadura porque t2 depende de él
 pp ii vs (As t1 ty) =
   pp ii vs t1
-    <> text "as"
+    <> text " as "
     <> printType ty
 pp ii vs Unit = text " unit" 
 pp ii vs (Fst t1) =
-  pp ii vs t1
+  text "fst "
+  <> pp ii vs t1
 pp ii vs (Snd t2) =
-  pp ii vs t2
+  text "snd "
+  <>  pp ii vs t2
 pp ii vs (Pair t1 t2)=
   text "( "
     <> pp ii vs t1
     <> text " , "
-    <> pp (ii + 1) vs t2
+    <> pp ii vs t2
     <> text  " )"
 pp ii vs (Zero) = 
   text "0"

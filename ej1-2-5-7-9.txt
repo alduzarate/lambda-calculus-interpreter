@@ -52,17 +52,17 @@ Ejercicio 5
 TVar, TAbs, TApp, TLet, TAscribe
 
 
-            x : E ∈ Γ 
+              x : E ∈ ⋅ , x : E 
 --------------------------------------- T-Var
-            Γ, x:E ⊢ x:E
+            ⋅ , x : E ⊢ x:E
 --------------------------------------- T-Abs
-        Γ, x:E ⊢ ((λx:E. x) : E -> E                                  z : E -> E ∈ Γ                    
+        ⋅, x:E ⊢ ((λx:E. x) : E -> E                            z : E -> E ∈ ⋅ , z : E -> E                     
 ---------------------------------------- T-Ascribe     ------------------------------------- T-Var    
-  Γ ⊢ ((λx:E. x) as E->E) : E -> E                          Γ, z : E -> E ⊢ z : E -> E                   
+   ⋅ ⊢ ((λx:E. x) as E->E) : E -> E                          ⋅ , z : E -> E ⊢ z : E -> E                   
 -------------------------------------------------------------------------------------------- T-Let
-               Γ ⊢ (let z = ((λx:E. x) as E->E) in z) : E -> E
+              ⋅ ⊢ (let z = ((λx:E. x) as E->E) in z) : E -> E
 -------------------------------------------------------------------------------------------- T-Ascribe
-            (let z = ((λx:E. x) as E->E) in z) as E -> E : E -> E
+            ⋅ ⊢ (let z = ((λx:E. x) as E->E) in z) as E -> E : E -> E
 
 
 Verificamos que el término tipa correctamente en el intérprete:
@@ -85,23 +85,23 @@ Reglas de evaluación para pares:
 (t1,t2) → (t1',t2)                              (v,t2) → (v, t2')
 
 
-     (v1,_)                                          v2
+     (v1, t2)                                        (t1, v2)
 ------------------- EFst                  -------------------------- ESnd
- fst (v1,_) → v1                                snd (_, v2) → v2
+  fst (v1, t2) → v1                              snd (t1, v2) → v2
 
 
 Ejercicio 9
 
-															    x : (E, E) ∈ Γ
-													------------------------------------- T-Var
-																Γ ⊢ x : (E, E)
+															                        x : (E, E) ∈ ⋅, x : (E,E)
+		                    											------------------------------------- T-Var
+												                            	⋅ , x : (E,E) ⊢ x : (E,E)
 -------------------------------- T-Unit				------------------------------------- T-Snd
-		Γ ⊢ unit : Unit						   		      Γ, x : (E,E) ⊢ snd x : E
--------------------------------- T-Ascribe    		------------------------------------- T-Abs
-	    Γ ⊢ unit as Unit : Unit 		           	 Γ ⊢ λ x : (E,E). snd x : (E,E) -> E
+		⋅ ⊢ unit : Unit						   		                  ⋅ , x : (E,E) ⊢ snd x : E
+-------------------------------- T-Ascribe    ------------------------------------- T-Abs
+	    ⋅ ⊢ unit as Unit : Unit 		           	 ⋅ ⊢ λ x : (E,E). snd x : (E,E) -> E
 ----------------------------------------------------------------------------------------- T-Pair
-      				  Γ ⊢ (unit as Unit, λx : (E,E). snd x) : (Unit,(E,E)->E)
+      				  ⋅ ⊢ (unit as Unit, λx : (E,E). snd x) : (Unit,(E,E)->E)
 ----------------------------------------------------------------------------------------- T-Fst
-						fst (unit as Unit, λx : (E,E). snd x) : Unit	
+						    ⋅ ⊢ fst (unit as Unit, λx : (E,E). snd x) : Unit	
 
 
